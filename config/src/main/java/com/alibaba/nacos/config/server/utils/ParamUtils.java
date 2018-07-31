@@ -17,6 +17,7 @@ package com.alibaba.nacos.config.server.utils;
 
 import java.util.Map;
 
+import com.alibaba.nacos.config.server.constant.Constants;
 import org.apache.commons.lang.StringUtils;
 
 import com.alibaba.nacos.config.server.exception.NacosException;
@@ -82,6 +83,22 @@ public class ParamUtils {
 		} else if (content.length() > PropertyUtil.getMaxContent()) {
 			throw new NacosException(NacosException.INVALID_PARAM,
 					"invalid content, over " + PropertyUtil.getMaxContent());
+		}
+	}
+
+	public static void checkParam(String dataIds, String group) throws NacosException {
+		if (StringUtils.isBlank(group) || !ParamUtils.isValid(group)) {
+			throw new NacosException(NacosException.INVALID_PARAM, "invalid group");
+		}
+		if (StringUtils.isBlank(dataIds) ) {
+			throw new NacosException(NacosException.INVALID_PARAM, "invalid dataIds");
+		}
+
+		String[] dataIdList = dataIds.split(Constants.WORD_SEPARATOR);
+		for (String dataId : dataIdList) {
+			if (StringUtils.isBlank(dataId) || !ParamUtils.isValid(dataId.trim())) {
+				throw new NacosException(NacosException.INVALID_PARAM, "invalid dataId");
+			}
 		}
 	}
 

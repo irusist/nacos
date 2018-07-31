@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 import com.alibaba.nacos.client.config.common.Constants;
 import com.alibaba.nacos.client.config.utils.ConcurrentDiskUtil;
@@ -28,6 +29,7 @@ import com.alibaba.nacos.client.config.utils.LogUtils;
 import com.alibaba.nacos.client.config.utils.SnapShotSwitch;
 import com.alibaba.nacos.client.logger.Logger;
 import com.alibaba.nacos.client.utils.StringUtils;
+import com.alibaba.nacos.domain.ConfigInfoEx;
 
 
 /**
@@ -96,7 +98,15 @@ public class LocalConfigInfoProcessor {
 		}
 	}
 
-    
+
+	public static void batchSaveSnapshot(String envName, List<ConfigInfoEx> configInfos, String tenant) {
+		for (ConfigInfoEx config : configInfos) {
+			if (config.getStatus() != 2) {
+				saveSnapshot(envName, config.getDataId(), config.getGroup(), tenant, config.getContent());
+			}
+		}
+	}
+
     static public void saveSnapshot(String envName, String dataId, String group, String tenant, String config) {
 		if (!SnapShotSwitch.getIsSnapShot()) {
 			return;

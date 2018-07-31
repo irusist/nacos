@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.alibaba.nacos.config.server.model.ConfigInfoBaseEx;
+import com.alibaba.nacos.config.server.utils.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,13 +47,6 @@ import com.alibaba.nacos.config.server.service.DiskUtil;
 import com.alibaba.nacos.config.server.service.LongPullingService;
 import com.alibaba.nacos.config.server.service.PersistService;
 import com.alibaba.nacos.config.server.service.trace.ConfigTraceService;
-import com.alibaba.nacos.config.server.utils.GroupKey2;
-import com.alibaba.nacos.config.server.utils.LogUtil;
-import com.alibaba.nacos.config.server.utils.MD5Util;
-import com.alibaba.nacos.config.server.utils.PropertyUtil;
-import com.alibaba.nacos.config.server.utils.Protocol;
-import com.alibaba.nacos.config.server.utils.RequestUtil;
-import com.alibaba.nacos.config.server.utils.TimeUtils;
 
 /**
  * ConfigServlet inner for aop
@@ -284,6 +281,78 @@ public class ConfigServletInner {
 		}
 
 		return HttpServletResponse.SC_OK + "";
+	}
+
+	public String doBatchGetConfig(HttpServletRequest request, HttpServletResponse response, String dataIds, String group,
+								   String tenant)
+			throws IOException, ServletException {
+		final String clientIp = RequestUtil.getRemoteIp(request);
+
+		List<ConfigInfoBaseEx> configs = new ArrayList<ConfigInfoBaseEx>();
+		boolean failed = false;
+
+		String[] dataIdArray = dataIds.split(Constants.WORD_SEPARATOR);
+		for (String dataId : dataIdArray) {
+			final String groupKey = GroupKey2.getKey(dataId, group, tenant);
+
+			ConfigInfoBaseEx config = null;
+
+			int lockResult = tryConfigReadLock(request, response, groupKey);
+			// get config snapshot
+			if (lockResult > 0) {
+				File file = null;
+				ConfigInfoBase configInfoBase = null;
+				FileInputStream fis = null;
+				try {
+					String content;
+					if (PropertyUtil.isStandaloneMode()) {
+						configInfoBase = persistService.findConfigInfo(dataId, group, tenant);
+						content = configInfoBase.getContent();
+					} else {
+						file = DiskUtil.targetFile(dataId, group, tenant);
+						fis = new FileInputStream(file);
+						content = IOUtils.toString(fis, Constants.ENCODE);
+					}
+					config = new ConfigInfoBaseEx(dataId, group, content, Constants.BATCH_QUERY_EXISTS, Constants.BATCH_QUERY_EXISTS_MSG);
+				} catch (IOException e) {
+					failed = true;
+					config = new ConfigInfoBaseEx(dataId, group, null, Constants.BATCH_OP_ERROR, Constants.BATCH_OP_ERROR_IO_MSG);
+					pullLog.error("[batch-get-error] clientIp={}, {}, md5={}", new Object[]{clientIp, groupKey, ConfigService.getContentMd5(groupKey)});
+				} finally {
+					releaseConfigReadLock(groupKey);
+					if (null != fis) {
+						fis.close();
+					}
+				}
+			} else if (lockResult == 0) {
+				// no config
+				config = new ConfigInfoBaseEx(dataId, group, null, Constants.BATCH_QUERY_NONEXISTS, Constants.BATCH_QUERY_NONEEXISTS_MSG);
+				pullLog.info("[batch-get-nodata] clientIp={}, {}, md5={}", new Object[]{clientIp, groupKey, ConfigService.getContentMd5(groupKey)});
+			} else { // conflict
+				failed = true;
+				config = new ConfigInfoBaseEx(dataId, group, null, Constants.BATCH_OP_ERROR, Constants.BATCH_OP_ERROR_CONFLICT_MSG);
+				pullLog.error("[batch-get-conflict] clientIp={}, {}, md5={}", new Object[]{clientIp, groupKey, ConfigService.getContentMd5(groupKey)});
+			}
+
+			configs.add(config);
+		}
+
+		try {
+			String json = JSONUtils.serializeObject(configs);
+			response.getWriter().println(json);
+		} catch (Exception e) {
+			pullLog.error("[batch-get-config-error] serialize result error, clientIp={}, group={}, dataIds={}", new Object[]{clientIp, group, dataIds}, e);
+			throw new RuntimeException("[batch-get-config-error] serialize result error", e);
+		}
+
+		if (failed) {
+			// 只提供全部成功的批量查询语义。部分失败返回http code 412
+			response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
+			return HttpServletResponse.SC_PRECONDITION_FAILED + "";
+		} else {
+			response.setStatus(HttpServletResponse.SC_OK);
+			return HttpServletResponse.SC_OK + "";
+		}
 	}
 
     private static void releaseConfigReadLock(String groupKey) {

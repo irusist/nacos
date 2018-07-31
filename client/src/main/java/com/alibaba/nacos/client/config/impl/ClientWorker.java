@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.client.config.BatchHttpResult;
 import com.alibaba.nacos.client.config.common.Constants;
 import com.alibaba.nacos.client.config.common.GroupKey;
 import com.alibaba.nacos.client.config.filter.impl.ConfigFilterChainManager;
@@ -48,8 +49,11 @@ import com.alibaba.nacos.client.config.utils.MD5;
 import com.alibaba.nacos.client.config.utils.TenantUtil;
 import com.alibaba.nacos.client.logger.Logger;
 import com.alibaba.nacos.client.logger.support.LoggerHelper;
+import com.alibaba.nacos.client.utils.JSONUtils;
 import com.alibaba.nacos.client.utils.ParamUtil;
 import com.alibaba.nacos.client.utils.StringUtils;
+import com.alibaba.nacos.domain.ConfigInfoEx;
+import org.codehaus.jackson.type.TypeReference;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -101,6 +105,13 @@ public class ClientWorker {
 				removeCache(dataId, group, tenant);
 			}
 		}
+	}
+
+	public List<Listener> getTenantListeners(String dataId, String group) {
+		group = null2defaultGroup(group);
+		String tenant = agent.getTenant();
+		CacheData cache = getCache(dataId, group, tenant);
+		return null == cache ? Collections.<Listener>emptyList() : cache.getListeners();
 	}
 	
 	@SuppressFBWarnings("JLM_JSR166_UTILCONCURRENT_MONITORENTER")
@@ -244,6 +255,58 @@ public class ClientWorker {
 					"http error, code=" + result.code + ",dataId=" + dataId + ",group=" + group + ",tenant=" + tenant);
 		}
 		}
+	}
+
+	public BatchHttpResult<ConfigInfoEx> getBatchServerConfig(String dataIds, String group, String tenant,
+															  long readTimeout) throws NacosException {
+		if (StringUtils.isBlank(group)) {
+			group = Constants.DEFAULT_GROUP;
+		}
+
+		HttpResult result = null;
+		try {
+			List<String> params = null;
+			if (StringUtils.isBlank(tenant)) {
+				params = Arrays.asList("dataIds", dataIds, "group", group);
+			} else {
+				params = Arrays.asList("dataIds", dataIds, "group", group, "tenant", tenant);
+			}
+			result = agent.httpPost(Constants.CONFIG_CONTROLLER_PATH + "/batchGetConfig", null, params, agent.getEncode(), readTimeout);
+		} catch (IOException e) {
+			log.error(agent.getName(), "NACOS-XXXX",
+					"[sub-server] batch get server config exception, dataIds={}, group={}, tenant={}, msg={}",
+					dataIds, group, tenant, e.toString());
+			return new BatchHttpResult(false, -1, "batch get config io exception:" + e.getMessage(), "");
+		}
+
+		BatchHttpResult<ConfigInfoEx> response = new BatchHttpResult(true, result.code, "", result.content);
+		if (result.code == HttpURLConnection.HTTP_OK) {
+			response.setSuccess(true);
+			response.setStatusMsg("batch get config success");
+			log.info(agent.getName(), "[batch-get] ok, dataIds={}, group={}, tenant={}", dataIds, group, tenant);
+		} else {
+			response.setSuccess(false);
+			response.setStatusMsg("batch get config fail, status:" + result.code);
+			log.warn(agent.getName(), "[batch-get] error, dataIds={}, group={}, tenant={}, code={}, msg={}",
+					dataIds, group, tenant, result.code, result.content);
+		}
+
+		if (HttpURLConnection.HTTP_OK == result.code ||
+				HttpURLConnection.HTTP_PRECON_FAILED == result.code) {
+			try {
+				String json = result.content;
+				Object resultObj = JSONUtils.deserializeObject(json, new TypeReference<List<ConfigInfoEx>>() {
+				});
+				response.getResult().addAll((List<ConfigInfoEx>)resultObj);
+				LocalConfigInfoProcessor.batchSaveSnapshot(agent.getName(), (List<ConfigInfoEx>)resultObj, tenant);
+			} catch (Exception e) {
+				response.setSuccess(false);
+				response.setStatusMsg("batch get config deserialize error");
+				log.warn(agent.getName(), "[batch-get] deserialize error, dataIds={}, group={}, tenant={}, msg={}",
+						dataIds, group, agent.getTenant(), e.toString());
+			}
+		}
+		return response;
 	}
 
 	private void checkLocalConfig(CacheData cacheData) {

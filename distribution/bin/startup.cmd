@@ -11,10 +11,13 @@ for %%d in (%BASE_DIR%) do set BASE_DIR=%%~dpd
 
 set CLASSPATH=.;%BASE_DIR%conf;%CLASSPATH%
 
+set JAVA_DEBUG_OPT= -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,address=7099,server=y,suspend=n
+
 set "JAVA_OPT=%JAVA_OPT% -server -Xms2g -Xmx2g -Xmn1g -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=320m"
 set "JAVA_OPT=%JAVA_OPT% -XX:+UseConcMarkSweepGC -XX:+UseCMSCompactAtFullCollection -XX:CMSInitiatingOccupancyFraction=70 -XX:+CMSParallelRemarkEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:+CMSClassUnloadingEnabled -XX:SurvivorRatio=8 -XX:-UseParNewGC"
 set "JAVA_OPT=%JAVA_OPT% -verbose:gc -Xloggc:"%USERPROFILE%\rmq_srv_gc.log" -XX:+PrintGCDetails"
 set "JAVA_OPT=%JAVA_OPT% -Dnacos.home=%BASE_DIR%"
+set "JAVA_OPT=%JAVA_OPT% %JAVA_DEBUG_OPT%"
 
 if not ""%2"" == "cluster" set "JAVA_OPT=%JAVA_OPT% -Dnacos.standalone=true"
 

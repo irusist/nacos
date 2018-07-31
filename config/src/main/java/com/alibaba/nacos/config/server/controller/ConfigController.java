@@ -177,6 +177,23 @@ public class ConfigController extends HttpServlet {
 		final String clientIp = RequestUtil.getRemoteIp(request);
 		inner.doGetConfig(request, response, dataId, group, tenant, tag, clientIp);
 	}
+
+	/**
+	 * 取数据
+	 *
+	 * @throws ServletException
+	 * @throws IOException
+	 * @throws NacosException
+	 */
+	@RequestMapping(value = "/batchGetConfig", method = RequestMethod.POST)
+	public void batchGetConfig(HttpServletRequest request, HttpServletResponse response,
+						  @RequestParam("dataIds") String dataIds, @RequestParam("group") String group,
+						  @RequestParam(value = "tenant", required = false, defaultValue = StringUtils.EMPTY) String tenant)
+			throws IOException, ServletException, NacosException {
+		// check params
+		ParamUtils.checkParam(dataIds, group);
+		inner.doBatchGetConfig(request, response, dataIds, group, tenant);
+	}
 	
 	/**
 	 * 同步删除某个dataId下面所有的聚合前数据

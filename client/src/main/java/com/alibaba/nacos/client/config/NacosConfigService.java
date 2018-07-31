@@ -17,10 +17,7 @@ package com.alibaba.nacos.client.config;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
@@ -41,6 +38,7 @@ import com.alibaba.nacos.client.config.utils.TenantUtil;
 import com.alibaba.nacos.client.logger.Logger;
 import com.alibaba.nacos.client.logger.support.LoggerHelper;
 import com.alibaba.nacos.client.utils.StringUtils;
+import com.alibaba.nacos.domain.ConfigInfoEx;
 
 /**
  * Config Impl
@@ -89,6 +87,21 @@ public class NacosConfigService implements ConfigService {
 		return getConfigInner(namespace, dataId, group, timeoutMs);
 	}
 
+	public BatchHttpResult<ConfigInfoEx> batchGetConfig(List<String> dataIds, String group, long timeoutMs) throws NacosException {
+		group = null2defaultGroup(group);
+		ParamUtils.checkKeyParam(dataIds, group);
+
+		StringBuilder dataIdstr = new StringBuilder();
+		String split = "";
+		for(String dataId : dataIds) {
+			dataIdstr.append(split);
+			dataIdstr.append(dataId);
+			split = Constants.WORD_SEPARATOR;
+		}
+
+		return worker.getBatchServerConfig(dataIdstr.toString(), group, namespace, timeoutMs);
+	}
+
 	@Override
 	public void addListener(String dataId, String group, Listener listener) throws NacosException {
 		worker.addTenantListeners(dataId, group, Arrays.asList(listener));
@@ -104,9 +117,17 @@ public class NacosConfigService implements ConfigService {
 		return removeConfigInner(namespace, dataId, group, null);
 	}
 
+	public void addListeners(String dataId, String group, List<? extends Listener> listeners) {
+		worker.addListeners(dataId, group, listeners);
+	}
+
 	@Override
 	public void removeListener(String dataId, String group, Listener listener) {
 		worker.removeTenantListener(dataId, group, listener);
+	}
+
+	public List<Listener> getListeners(String dataId, String group) {
+		return worker.getTenantListeners(dataId, group);
 	}
 
 	private String getConfigInner(String tenant, String dataId, String group, long timeoutMs) throws NacosException {

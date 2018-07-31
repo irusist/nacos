@@ -17,6 +17,10 @@ package com.alibaba.nacos.api.config;
 
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.client.config.BatchHttpResult;
+import com.alibaba.nacos.domain.ConfigInfoEx;
+
+import java.util.List;
 
 /**
  * Config Interface
@@ -28,7 +32,7 @@ public interface ConfigService {
 
 	/**
 	 * Get Configuration
-	 * 
+	 *
 	 * @param dataId
 	 *            Config ID
 	 * @param group
@@ -48,7 +52,7 @@ public interface ConfigService {
 	 * getExecutor method in the ManagerListener, provide a thread pool of
 	 * execution. If provided, use the main thread callback, May block other
 	 * configurations or be blocked by other configurations.
-	 * 
+	 *
 	 * @param dataId
 	 *            Config ID
 	 * @param group
@@ -62,7 +66,7 @@ public interface ConfigService {
 
 	/**
 	 * publish config.
-	 * 
+	 *
 	 * @param dataId
 	 *            Config ID
 	 * @param group
@@ -77,7 +81,7 @@ public interface ConfigService {
 
 	/**
 	 * Remove Config
-	 * 
+	 *
 	 * @param dataId
 	 *            Config ID
 	 * @param group
@@ -90,7 +94,7 @@ public interface ConfigService {
 
 	/**
 	 * Remove Listener
-	 * 
+	 *
 	 * @param dataId
 	 *            Config ID
 	 * @param group
@@ -100,4 +104,31 @@ public interface ConfigService {
 	 */
 	public void removeListener(String dataId, String group, Listener listener);
 
+	/**
+	 * batch get config
+	 *
+	 * @param dataIds config id list
+	 * @param group config group
+	 * @param timeoutMs read timeout
+	 * @return batch result
+	 * @throws NacosException NacosException
+	 */
+	public BatchHttpResult<ConfigInfoEx> batchGetConfig(List<String> dataIds, String group, long timeoutMs) throws NacosException ;
+
+	/**
+	 * add listeners
+	 * @param dataId config id
+	 * @param group config group
+	 * @param listeners listener list
+	 */
+	public void addListeners(String dataId, String group, List<? extends Listener> listeners);
+
+	/**
+	 * get listeners
+	 *
+	 * @param dataId config id
+	 * @param group config group
+	 * @return listener list
+	 */
+	public List<Listener> getListeners(String dataId, String group);
 }
