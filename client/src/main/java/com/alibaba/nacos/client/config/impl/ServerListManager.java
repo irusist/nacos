@@ -164,6 +164,12 @@ public class ServerListManager {
 		if (!StringUtils.isBlank(endpointTmp)) {
 			endpoint = endpointTmp;
 		}
+
+		String endpointPortTmp = properties.getProperty(PropertyKeyConst.ENDPINT_PORT);
+		if (!StringUtils.isBlank(endpointPortTmp)) {
+			endpointPort = Integer.parseInt(endpointPortTmp);
+		}
+
 		String contentPathTmp = properties.getProperty(PropertyKeyConst.CONTEXT_PATH);
 		if (!StringUtils.isBlank(contentPathTmp)) {
 			contentPath = contentPathTmp;

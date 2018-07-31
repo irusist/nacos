@@ -20,6 +20,7 @@ import java.util.Properties;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
+import com.alibaba.nacos.client.utils.StringUtils;
 
 /**
  * Config Factory
@@ -39,6 +40,28 @@ public class ConfigFactory {
 	 *             Exception
 	 */
 	public static ConfigService createConfigService(Properties properties) throws NacosException {
+		return new NacosConfigService(properties);
+	}
+
+	/**
+	 * Create Config
+	 *
+	 * @return Config
+	 * @throws NacosException
+	 *             Exception
+	 */
+	public static ConfigService createConfigService() throws NacosException {
+		Properties properties = new Properties();
+		properties.put(PropertyKeyConst.ENDPOINT, System.getProperty("nacos.endpoint", "midenv.mychebao.com"));
+		properties.put(PropertyKeyConst.ENDPINT_PORT, System.getProperty("nacos.endpoint.port", "80"));
+		String encode = System.getProperty("nacos.encode");
+		if (StringUtils.isNotEmpty(encode)) {
+			properties.put(PropertyKeyConst.ENCODE, System.getProperty("nacos.encode"));
+		}
+		String namespace = System.getProperty("nacos.namespace");
+		if (StringUtils.isNotEmpty(namespace)) {
+			properties.put(PropertyKeyConst.NAMESPACE, namespace);
+		}
 		return new NacosConfigService(properties);
 	}
 

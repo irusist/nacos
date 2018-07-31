@@ -23,6 +23,7 @@ package com.alibaba.nacos.api;
 public class PropertyKeyConst {
 
 	public final static String ENDPOINT = "endpoint";
+	public final static String ENDPINT_PORT = "endpoint.port";
 	public final static String NAMESPACE = "namespace";
 	public final static String ACCESS_KEY = "accessKey";
 	public final static String SECRET_KEY = "secretKey";

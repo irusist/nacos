@@ -46,6 +46,17 @@ public class NacosFactory {
 
 	/**
 	 * Create config
+	 *
+	 * @return config
+	 * @throws NacosException
+	 *             Exception
+	 */
+	public static ConfigService createConfigService() throws NacosException {
+		return ConfigFactory.createConfigService();
+	}
+
+	/**
+	 * Create config
 	 * 
 	 * @param serverAddr
 	 *            server list
