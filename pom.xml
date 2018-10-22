@@ -21,7 +21,7 @@
     <inceptionYear>2018</inceptionYear>
     <groupId>com.alibaba.nacos</groupId>
     <artifactId>nacos-all</artifactId>
-    <version>0.3.0-RC1</version>
+    <version>0.3.0-RC1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Alibaba NACOS ${project.version}</name>
@@ -718,19 +718,5 @@
 
         </dependencies>
     </dependencyManagement>
-
-    <!--Maven上传地址 -->
-    <distributionManagement>
-        <snapshotRepository>
-                <id>snapshots</id>
-                <name>Snapshots</name>
-                <url>http://188.188.22.221:9011/nexus/content/repositories/snapshots/</url>
-        </snapshotRepository>
-        <repository>
-                <id>releases</id>
-                <name>Releases</name>
-                <url>http://188.188.22.221:9011/nexus/content/repositories/releases/</url>
-        </repository>
-    </distributionManagement>
 </project>
 
