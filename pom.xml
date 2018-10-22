@@ -718,5 +718,19 @@
 
         </dependencies>
     </dependencyManagement>
+
+    <!--Maven上传地址 -->
+    <distributionManagement>
+        <snapshotRepository>
+                <id>snapshots</id>
+                <name>Snapshots</name>
+                <url>http://188.188.22.221:9011/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <repository>
+                <id>releases</id>
+                <name>Releases</name>
+                <url>http://188.188.22.221:9011/nexus/content/repositories/releases/</url>
+        </repository>
+    </distributionManagement>
 </project>
 
