@@ -15,12 +15,11 @@
  */
 package com.alibaba.nacos.config.server.utils;
 
-import java.util.Map;
-
-import com.alibaba.nacos.config.server.constant.Constants;
-import org.apache.commons.lang.StringUtils;
-
+import com.alibaba.nacos.common.Constants;
 import com.alibaba.nacos.config.server.exception.NacosException;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Map;
 
 /**
  * 参数合法性检查工具类
