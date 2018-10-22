@@ -59,7 +59,7 @@ public class ConfigFactory {
 	 */
 	public static ConfigService createConfigService() throws NacosException {
 		Properties properties = new Properties();
-		properties.put(PropertyKeyConst.ENDPOINT, System.getProperty("nacos.endpoint", "midenv.mychebao.com"));
+		properties.put(PropertyKeyConst.ENDPOINT, System.getProperty("nacos.endpoint", "midenv.local.mychebao.com"));
 		properties.put(PropertyKeyConst.ENDPINT_PORT, System.getProperty("nacos.endpoint.port", "80"));
 		String encode = System.getProperty("nacos.encode");
 		if (StringUtils.isNotEmpty(encode)) {
